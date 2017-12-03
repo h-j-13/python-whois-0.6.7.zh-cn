@@ -1,0 +1,24 @@
+*.pyc
+*.pyo
+*.so
+*.class
+*~
+.vscode
+# *.json
+.vscode
+*.log
+*.log.*
+# *.conf
+
+.idea/
+TMP
+build/
+/dist/
+MANIFEST
+/tornado.egg-info/
+
+# *.crt
+# *.key
+# *.pem
+# *.csr
+# *.cnf
