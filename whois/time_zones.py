@@ -5,6 +5,9 @@ from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 from builtins import *
+  
+# 时区设置 每个时区的代码及城市
+    # 用于处理UTC时间
 _tz_string = '''-12 Y
 -11 X NUT SST
 -10 W CKT HAST HST TAHT TKT
