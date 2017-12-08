@@ -90,8 +90,8 @@ python-whois-0.6.7
 └─whois                             \\  WHOIS 库
     │  parser.py                    \\  WHOIS 解析模板
     │  time_zones.py                \\  时区数据 更好的处理时间属性 
-    │  whois.py                     \\
-    │  __init__.py                  \\
+    │  whois.py                     \\  WHOIS链接客户端,请求构造,域名处理及解析,WHOIS服务器选择
+    │  __init__.py                  \\  WHOIS 主函数入口
     │   
     └─data                          \\  数据目录
           └─ public_suffix_list.dat \\  https://publicsuffix.org/list/ 上的
@@ -104,17 +104,32 @@ WHOIS 0.7 是一个 2012年的 基于Linux的WHOIS命令的域名WHOIS查询库
 ```
 
 ## 源码解析
-入口:whois.py --- whois函数
-在代码中
+入口:``__init__.py``` --- whois函数
+其他所有函数均在代码中在代码中标注了添加的中文注释
 
-### 代码结构
+## 特点
+### 获取WHOIS流程
+输入FQDN -> 进行FQDN解析 -> 获取域名 -> 选择对应的WHOIS服务器 -> 构造合适的请求 -> 解析返回数据,找出详细信息所在的WHOIS服务器 -> 构造请求 -> 获取WHOIS信息
 
-### 特点
+### 域名解析流程
+这里没有使用tldextract库或者其他基于字符串解析域名的方式,      
+而是从 https://publicsuffix.org/list/public_suffix_list.dat 里获取当前所有的一级和二级域名后缀      
+通过在需要解析的域名中匹配最长的后缀来找出域名所在的位置,并提取
+ 
+### 获取WHOIS服务器地址过程
+这里还是缺少了部分依据,WHOIS服务器总体数量较少      
+基本一次WHOIS获取过程总要请求两次WHOIS服务器,相当于降低了一半的效率     
+但不使用数据库的前提下,此方式倒是比较简洁
+
+### 解析WHOIS数据,提取关键信息
+这里采用了基类+继承的方式       
+构建了多个WHOIS解析类,针对解析WHOIS返回的数据.       
+这部分正则表达式比较有参考价值
 
 ## 最后
 H-J-13(@`13)                                         
 z.g.13@163.com/h.j.13.new@gmail.com                 
 Harbin Institute of Technology at Weihai     
 
-[`13 Blog](http://houjie13.com/)
+[`13 Blog](http://houjie13.com/)        
 [`13的博客](http://www.jianshu.com/u/75156f101757)	
