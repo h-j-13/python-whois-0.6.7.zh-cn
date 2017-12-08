@@ -104,7 +104,7 @@ WHOIS 0.7 是一个 2012年的 基于Linux的WHOIS命令的域名WHOIS查询库
 ```
 
 ## 源码解析
-入口:``__init__.py``` --- whois函数
+入口:```__init__.py``` --- whois函数
 其他所有函数均在代码中在代码中标注了添加的中文注释
 
 ## 特点
@@ -131,5 +131,6 @@ H-J-13(@`13)
 z.g.13@163.com/h.j.13.new@gmail.com                 
 Harbin Institute of Technology at Weihai     
 
-[`13 Blog](http://houjie13.com/)        
+[`13 Blog](http://houjie13.com/)  
+
 [`13的博客](http://www.jianshu.com/u/75156f101757)	
