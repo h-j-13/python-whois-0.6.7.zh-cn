@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# python WHOIS客户端
 """
 Whois client for python
 
@@ -41,7 +42,8 @@ import optparse
 
 
 class NICClient(object):
-
+    
+    # WHOIS 服务器列表
     ABUSEHOST = "whois.abuse.net"
     NICHOST = "whois.crsnic.net"
     INICHOST = "whois.networksolutions.com"
@@ -65,15 +67,17 @@ class NICClient(object):
     WHOIS_RECURSE = 0x01
     WHOIS_QUICK = 0x02
 
-    ip_whois = [LNICHOST, RNICHOST, PNICHOST, BNICHOST,PANDIHOST]
+    ip_whois = [LNICHOST, RNICHOST, PNICHOST, BNICHOST, PANDIHOST]
 
     def __init__(self):
         self.use_qnichost = False
 
     def findwhois_server(self, buf, hostname, query):
+        # 从返回数据里查询域名具体WHOIS信息所在的WHOIS服务器
         """Search the initial TLD lookup results for the regional-specifc
         whois server for getting contact details.
         """
+        # 先去一级WHOIS服务器上查询此域名对应的WHOIS服务器地址 并返回
         nhost = None
         match = re.compile('Domain Name: ' + query + '\s*.*?Whois Server: (.*?)\s', flags=re.IGNORECASE|re.DOTALL).search(buf)
         if match:
@@ -81,10 +85,11 @@ class NICClient(object):
             # if the whois address is domain.tld/something then
             # s.connect((hostname, 43)) does not work
             if nhost.count('/') > 0:
-                nhost = None
-        elif hostname == NICClient.ANICHOST:
-            for nichost in NICClient.ip_whois:
-                if buf.find(nichost) != -1:
+                nhost = None    # 假如WHOIS服务器有/ 则抛弃其
+        #　也就是所　"whois.arin.net"　的返回格式于其他WHOIS并不相同　且此WHOIS服务有且仅有　LNICHOST, RNICHOST, PNICHOST, BNICHOST, PANDIHOST　WHOIS服务器
+        elif hostname == NICClient.ANICHOST:    # 找不的话 如果查询的WHOIS服务器为  "whois.arin.net"
+            for nichost in NICClient.ip_whois:  # 则从 LNICHOST, RNICHOST, PNICHOST, BNICHOST, PANDIHOST 找到需要查询的WHOIS服务器
+                if buf.find(nichost) != -1: # 
                     nhost = nichost
                     break
         return nhost
@@ -97,34 +102,38 @@ class NICClient(object):
         there for contact details
         """
         response = b''
-        try:
+        try: # socket通信 ipv4 超时10s 连结43端口
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(10)
             s.connect((hostname, 43))
 
-            try:
+            try:    # 转为UTF8编码
                 query = query.decode('utf-8')
             except UnicodeEncodeError:
                 pass  # Already Unicode (python2's error)
             except AttributeError:
                 pass  # Already Unicode (python3's error)
 
-            if hostname == NICClient.DENICHOST:
-                query_bytes = "-T dn,ace -C UTF-8 " + query
-            elif hostname.endswith(NICClient.QNICHOST_TAIL) and many_results:
-                query_bytes = '=' + query
-            else:
+            # 根据需要查询的WHOIS服务器优化查询格式
+            if hostname == NICClient.DENICHOST: # de whois服务器
+                query_bytes = "-T dn,ace -C UTF-8 " + query # dewhois服务器的 特殊的查询请求
+            elif hostname.endswith(NICClient.QNICHOST_TAIL) and many_results:   # 如果WHOIS服务器
+                query_bytes = '=' + query                                       # .whois-servers.net 结尾            
+            else:                                                               # 则加上在查询前面加  = 
                 query_bytes = query
-            s.send(bytes(query_bytes,'utf-8') + b"\r\n")
+            # 发送查询请求    
+            s.send(bytes(query_bytes,'utf-8') + b"\r\n")    
+            # 接收数据 
             # recv returns bytes
             while True:
                 d = s.recv(4096)
                 response += d
                 if not d:
                     break
+            # 接收数据之后关闭socket 捕获异常后输出
             s.close()
-        except socket.error as socketerror:
-            print('Socket Error:', socketerror)
+        except socket.error as socketerror:         # ??? 这个try-except包的范围稍微有点大了..
+            print('Socket Error:', socketerror)     # 其次,为什么是建立连接之后整理查询数据呢 而不是先整理好 然后建立连接 发送查询数据
 
         nhost = None
         response = response.decode('utf-8', 'replace')
@@ -138,29 +147,40 @@ class NICClient(object):
 
     def choose_server(self, domain):
         """Choose initial lookup NIC host"""
+
+        # 处理编码问题
         try:
             domain = domain.encode('idna').decode('utf-8')
         except TypeError:
             domain = domain.decode('utf-8').encode('idna').decode('utf-8')
         except AttributeError:
             domain = domain.decode('utf-8').encode('idna').decode('utf-8')
+
+
+        # 域名以 -NORID 结尾 -> whois.norid.no
         if domain.endswith("-NORID"):
             return NICClient.NORIDHOST
+        # 域名以 id 结尾 -> "whois.pandi.or.id
         if domain.endswith("id"):
             return NICClient.PANDIHOST
-
+        # 找出tld
         domain = domain.split('.')
         if len(domain) < 2:
             return None
+        # 找出顶级域
         tld = domain[-1]
-        if tld[0].isdigit():
+        if tld[0].isdigit():    # 顶级域第一个字母是数字 -> whois.arin.net
             return NICClient.ANICHOST
+        # 顶级域ai ->  whois.ai
         elif tld == 'ai':
             return NICClient.AI_HOST
-        else:
+        
+        # 顶级域为其他的时候  -> 顶级域 + .whois-servers.net
+        else:       ### ??? 有没有理论依据啊
             return tld + NICClient.QNICHOST_TAIL
 
     def whois_lookup(self, options, query_arg, flags):
+        # WHOIS 查询主函数
         """Main entry point: Perform initial lookup on TLD whois server,
         or other server to get region-specific whois server, then if quick
         flag is false, perform a second lookup on the region-specific
